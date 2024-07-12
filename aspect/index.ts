@@ -48,6 +48,8 @@ class Aspect implements IPostContractCallJP, IPreContractCallJP {
         if (!needCal) {
             return
         }
+        // 判断是否已经被销毁了
+        sys.require(!this.isDestroyEquipment(contractAddress, nftIndex), "the equipment already destroy")
         // 读取配置，确定曲线计算方法
         let lossFunc = this.getSelectLossFunc()
         // 计算折损结果
@@ -56,6 +58,12 @@ class Aspect implements IPostContractCallJP, IPreContractCallJP {
         // 检查是否已经折损，如果折损则抛异常
         if (postLoss <= Aspect.MinLossValue) {
             sys.revert("The loss limit of this nft has been reached");
+            // 判断是否要销毁
+            const needDestroy = sys.aspect.property.get<boolean>("needDestroy");
+            if (needDestroy) {
+                // 处理销毁逻辑
+                this.destroyEquipment(contractAddress, nftIndex)
+            }
         }
         // 更新数值
         const storagePrefix = `${contractAddress}:${nftIndex}`;
@@ -124,6 +132,16 @@ class Aspect implements IPostContractCallJP, IPreContractCallJP {
     calStepLoss(_: u64, currentValue: u64): u64 {
         // 每次衰减10%
         return currentValue * 0.9;
+    }
+
+    // 销毁
+    destroyEquipment(contractAddress: string, nftIndex: string): void {
+        new MutableStateValue<boolean>(contractAddress + nftIndex + "#destroy").set(true);
+    }
+
+    // 判断是否已经销毁
+    isDestroyEquipment(contractAddress: string, nftIndex: string): boolean {
+        return sys.aspect.mutableState.get<boolean>(contractAddress + nftIndex + "#destroy").unwrap();
     }
 
     /**

@@ -31,6 +31,7 @@ contract AspectMap is ERC721, ERC721Burnable, Ownable {
         return uint256(returnData);
     }
 
+    // 过于中心化，可以考虑是否需要
     function updateLossValue(address aspectId, uint256 index, uint256 newLossValue) public onlyOwner returns (string memory validationData) {
         bytes memory contextKey = abi.encodePacked(aspectId, address(this), index, CurrentLossPre);
         bytes memory contextValue = abi.encode(contextKey, newLossValue);
